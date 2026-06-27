@@ -1,0 +1,24 @@
+{
+  "name": "slot",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Slot — Google Calendar 기반 약속 잡기 서비스",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "build:shared": "npm run build --workspace @slot/shared",
+    "dev": "npm run build:shared && concurrently -n api,web -c blue,magenta \"npm:dev:api\" \"npm:dev:web\"",
+    "dev:api": "npm run dev --workspace @slot/api",
+    "dev:web": "npm run dev --workspace @slot/web",
+    "build": "npm run build:shared && npm run build --workspace @slot/api && npm run build --workspace @slot/web",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,css,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,css,md}\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0",
+    "prettier": "^3.3.3",
+    "typescript": "^5.6.3"
+  }
+}

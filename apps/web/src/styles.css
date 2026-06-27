@@ -1,0 +1,654 @@
+:root {
+  --bg: #f1f3f4;
+  --card: #ffffff;
+  --ink: #202124;
+  --muted: #5f6368;
+  --brand: #1a73e8;
+  --brand-ink: #1967d2;
+  --brand-soft: #e8f0fe;
+  --line: #dadce0;
+  --grid-line: #e8eaed;
+  --offhours: #f6f7f9;
+  --ok: #1e8e3e;
+  --danger: #d93025;
+  --radius: 16px;
+  --shadow: 0 1px 3px rgba(60, 64, 67, 0.16), 0 8px 24px rgba(60, 64, 67, 0.12);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family:
+    'Pretendard',
+    'Google Sans',
+    Roboto,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Apple SD Gothic Neo',
+    sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+.page {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 40px 20px 60px;
+}
+
+.page--wide {
+  max-width: 880px;
+}
+
+/* Brand */
+.brand {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.brand__logo {
+  display: inline-block;
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  color: var(--brand);
+}
+
+.brand__tagline {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+/* Card */
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 22px;
+}
+
+/* Week navigation */
+.weeknav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.weeknav__center {
+  position: relative;
+  flex: 1;
+  display: flex;
+  justify-content: center;
+}
+
+.weeknav__label {
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+.weeknav__label:hover {
+  background: var(--brand-soft);
+  border-color: var(--line);
+}
+
+/* Date picker popover */
+.popover-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+}
+
+.datepicker {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 41;
+  width: 300px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+  padding: 14px;
+  animation: pop 0.14s ease;
+}
+
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -4px);
+  }
+}
+
+.datepicker__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.datepicker__title {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.datepicker__nav {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  font-size: 18px;
+  line-height: 1;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.datepicker__nav:hover {
+  background: var(--brand-soft);
+  color: var(--brand);
+}
+
+.datepicker__weekdays,
+.datepicker__grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px 0;
+  touch-action: none;
+  user-select: none;
+}
+
+.datepicker__weekday {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  padding: 4px 0;
+}
+
+.datepicker__cell {
+  position: relative;
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.datepicker__cell.is-empty {
+  visibility: hidden;
+}
+
+.datepicker__cell.is-selectable {
+  cursor: pointer;
+}
+
+.datepicker__cell.is-selectable:hover {
+  background: var(--brand-soft);
+}
+
+.datepicker__cell.is-disabled {
+  color: #c5c8cd;
+  cursor: default;
+}
+
+/* 다른 달 날짜 (드래그 연속성을 위해 표시하되 흐리게) */
+.datepicker__cell.is-out {
+  color: #b9bcc4;
+}
+
+.datepicker__cell.is-out.is-range {
+  color: var(--brand-ink);
+}
+
+.datepicker__cell.is-out.is-range-start,
+.datepicker__cell.is-out.is-range-end {
+  color: #fff;
+}
+
+/* 선택된 범위: 가운데는 띠처럼, 양 끝은 둥글게 */
+.datepicker__cell.is-range {
+  background: var(--brand-soft);
+  color: var(--brand-ink);
+  font-weight: 700;
+  border-radius: 0;
+}
+
+.datepicker__cell.is-range-start {
+  border-top-left-radius: 999px;
+  border-bottom-left-radius: 999px;
+}
+
+.datepicker__cell.is-range-end {
+  border-top-right-radius: 999px;
+  border-bottom-right-radius: 999px;
+}
+
+.datepicker__cell.is-range-start,
+.datepicker__cell.is-range-end {
+  background: var(--brand);
+  color: #fff;
+}
+
+.datepicker__cell.is-today {
+  box-shadow: inset 0 0 0 1.5px var(--brand);
+}
+
+.datepicker__dot {
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--brand);
+}
+
+.datepicker__cell.is-range-start .datepicker__dot,
+.datepicker__cell.is-range-end .datepicker__dot {
+  background: #fff;
+}
+
+.datepicker__cell.is-disabled .datepicker__dot {
+  display: none;
+}
+
+.datepicker__hint {
+  margin: 10px 0 0;
+  font-size: 11px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.weeknav__btn {
+  font: inherit;
+  font-weight: 600;
+  font-size: 14px;
+  padding: 7px 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.weeknav__btn:hover:not(:disabled) {
+  background: var(--brand-soft);
+  border-color: var(--brand);
+  color: var(--brand-ink);
+}
+
+.weeknav__btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* Week grid */
+.week {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow-x: auto;
+}
+
+.week__head {
+  display: flex;
+  min-width: 560px;
+  border-bottom: 1px solid var(--line);
+  background: #fff;
+}
+
+.week__gutter-head {
+  width: 52px;
+  flex: 0 0 52px;
+}
+
+.week__dayhead {
+  flex: 1;
+  min-width: 64px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 0;
+  border-left: 1px solid var(--line);
+}
+
+.week__dow {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.week__dom {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.week__dayhead.is-today .week__dom {
+  width: 30px;
+  height: 30px;
+  line-height: 30px;
+  text-align: center;
+  border-radius: 50%;
+  background: var(--brand);
+  color: #fff;
+  font-size: 15px;
+}
+
+.week__body {
+  display: flex;
+  min-width: 560px;
+  max-height: 460px;
+  overflow-y: auto;
+  position: relative;
+}
+
+.week__gutter {
+  position: relative;
+  width: 52px;
+  flex: 0 0 52px;
+}
+
+.week__hourlabel {
+  position: absolute;
+  right: 8px;
+  transform: translateY(-50%);
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.week__grid {
+  position: relative;
+  display: flex;
+  flex: 1;
+  background-color: var(--offhours);
+  background-image: linear-gradient(var(--grid-line) 1px, transparent 1px);
+  background-size: 100% 60px;
+}
+
+.week__col {
+  position: relative;
+  flex: 1;
+  min-width: 64px;
+  border-left: 1px solid var(--line);
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.week__working {
+  position: absolute;
+  left: 3px;
+  right: 3px;
+  background: #fff;
+  border-radius: 6px;
+  box-shadow: inset 0 0 0 1px #e8eaed;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.week__busy {
+  position: absolute;
+  left: 3px;
+  right: 3px;
+  border-radius: 6px;
+  background: repeating-linear-gradient(45deg, #e6e8ec, #e6e8ec 6px, #f1f2f5 6px, #f1f2f5 12px);
+  color: #9aa0a6;
+  font-size: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.week__sel {
+  position: absolute;
+  left: 3px;
+  right: 3px;
+  background: var(--brand);
+  color: #fff;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  overflow: hidden;
+  box-shadow: 0 2px 10px rgba(26, 115, 232, 0.45);
+  pointer-events: none;
+  z-index: 3;
+}
+
+/* Action bar */
+.actionbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 16px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: #fafbfc;
+}
+
+.actionbar.is-active {
+  border-color: var(--brand);
+  background: var(--brand-soft);
+}
+
+.actionbar__label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.actionbar.is-active .actionbar__label {
+  color: var(--brand-ink);
+}
+
+.empty {
+  color: var(--muted);
+  text-align: center;
+  padding: 32px 12px;
+}
+
+/* Booking form */
+.booking-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 440px;
+  margin: 0 auto;
+}
+
+.selected-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: var(--brand-soft);
+  border: 1px solid var(--line);
+}
+
+.selected-summary__date {
+  font-weight: 700;
+}
+
+.selected-summary__time {
+  color: var(--brand-ink);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.field .req {
+  color: var(--danger);
+  font-style: normal;
+}
+
+.field input,
+.field textarea {
+  font: inherit;
+  font-weight: 400;
+  padding: 11px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  resize: vertical;
+}
+
+.field input:focus,
+.field textarea:focus {
+  outline: none;
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px var(--brand-soft);
+}
+
+.form-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 4px;
+}
+
+.form-error {
+  color: var(--danger);
+  font-size: 14px;
+  margin: 0;
+}
+
+/* Buttons */
+.btn-primary,
+.btn-ghost {
+  font: inherit;
+  font-weight: 700;
+  padding: 11px 18px;
+  border-radius: 10px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+.btn-primary {
+  background: var(--brand);
+  color: #fff;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--brand-ink);
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-ghost {
+  background: #fff;
+  color: var(--muted);
+  border-color: var(--line);
+}
+
+.btn-ghost:hover {
+  border-color: var(--muted);
+}
+
+/* Confirmation */
+.confirmation {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  max-width: 440px;
+  margin: 0 auto;
+}
+
+.confirmation__check {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--ok);
+  color: #fff;
+  font-size: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.confirmation h2 {
+  margin: 0;
+}
+
+.confirmation__sub {
+  color: var(--muted);
+  margin: 0;
+}
+
+.confirmation__card {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 8px 16px;
+  margin: 6px 0;
+}
+
+.confirmation__row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+}
+
+.confirmation__row:last-child {
+  border-bottom: none;
+}
+
+.confirmation__row span {
+  color: var(--muted);
+}
+
+/* Footer */
+.foot {
+  text-align: center;
+  color: var(--muted);
+  font-size: 12px;
+  margin-top: 22px;
+}
