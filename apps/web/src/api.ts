@@ -52,11 +52,16 @@ export const fetchAvailability = (
 };
 
 /** 주간 그리드용 일정 데이터(근무 시간 + 바쁜 시간) 조회 */
-export const fetchSchedule = (from: Date, to: Date): Promise<ScheduleResponse> => {
+export const fetchSchedule = (
+  from: Date,
+  to: Date,
+  host?: string | null,
+): Promise<ScheduleResponse> => {
   const params = new URLSearchParams({
     from: from.toISOString(),
     to: to.toISOString(),
   });
+  if (host) params.set('host', host);
   return request<ScheduleResponse>(`/schedule?${params.toString()}`);
 };
 

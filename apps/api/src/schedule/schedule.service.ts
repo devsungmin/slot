@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { DaySchedule, ScheduleResponse, TimeSlot } from '@slot/shared';
 import { CALENDAR_PROVIDER, CalendarProvider } from '../calendar/calendar-provider.interface';
-import { scheduleConfig } from '../config/schedule.config';
+import { getHost } from '../config/schedule.config';
 import { getZonedParts, parseHhMm, zonedWallTimeToUtc } from '../common/time.util';
 
 @Injectable()
@@ -12,8 +12,8 @@ export class ScheduleService {
    * 주간 그리드를 그리는 데 필요한 원본 데이터를 반환한다.
    * (일자별 근무 시간대 + 기간 내 바쁜 시간) — 실제 빈 시간 계산/선택은 프론트가 한다.
    */
-  async getSchedule(from: Date, to: Date): Promise<ScheduleResponse> {
-    const cfg = scheduleConfig;
+  async getSchedule(hostSlug: string | undefined, from: Date, to: Date): Promise<ScheduleResponse> {
+    const cfg = getHost(hostSlug);
     const now = new Date();
     const windowEnd = new Date(now.getTime() + cfg.bookingWindowDays * 24 * 60 * 60_000);
     const rangeStart = new Date(Math.max(from.getTime(), now.getTime()));
@@ -62,11 +62,13 @@ export class ScheduleService {
     }
 
     const busy = await this.calendar.getBusyIntervals(
+      cfg.calendarId,
       rangeStart.toISOString(),
       rangeEnd.toISOString(),
     );
 
     return {
+      hostSlug: cfg.slug,
       hostName: cfg.hostName,
       timezone: cfg.timezone,
       minNoticeHours: cfg.minNoticeHours,

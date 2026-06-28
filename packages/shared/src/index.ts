@@ -45,6 +45,8 @@ export interface DaySchedule {
  * 프론트엔드가 주간 그리드를 그리고, 빈 시간만 드래그로 선택할 수 있게 하는 데 필요한 원본 데이터.
  */
 export interface ScheduleResponse {
+  /** 호스트 slug (URL 식별자) */
+  hostSlug: string;
   /** 호스트 표시 이름 */
   hostName: string;
   /** 호스트 타임존 (IANA) */
@@ -61,6 +63,8 @@ export interface ScheduleResponse {
 
 /** POST /api/bookings 요청 본문 */
 export interface CreateBookingRequest {
+  /** 예약 대상 호스트 slug (생략 시 기본 호스트) */
+  hostSlug?: string;
   /** 선택한 시작 시각 (ISO 8601) */
   start: string;
   /** 선택한 종료 시각 (ISO 8601) */
@@ -81,6 +85,10 @@ export type BookingStatus = 'confirmed' | 'cancelled';
 /** 생성된 예약 + 캘린더 이벤트 결과 */
 export interface Booking {
   id: string;
+  /** 예약 대상 호스트 slug */
+  hostSlug: string;
+  /** 이벤트가 생성된 캘린더 ID */
+  calendarId: string;
   start: string;
   end: string;
   guestName: string;

@@ -11,7 +11,11 @@ export class ScheduleController {
    * from/to 미지정 시 오늘부터 14일을 기본값으로 사용한다.
    */
   @Get()
-  async get(@Query('from') from?: string, @Query('to') to?: string): Promise<ScheduleResponse> {
+  async get(
+    @Query('host') host?: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+  ): Promise<ScheduleResponse> {
     const now = new Date();
     const fromDate = from ? new Date(from) : now;
     const toDate = to ? new Date(to) : new Date(now.getTime() + 14 * 24 * 60 * 60_000);
@@ -20,6 +24,6 @@ export class ScheduleController {
       throw new BadRequestException('from/to는 유효한 ISO 8601 날짜여야 합니다.');
     }
 
-    return this.schedule.getSchedule(fromDate, toDate);
+    return this.schedule.getSchedule(host, fromDate, toDate);
   }
 }

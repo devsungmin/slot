@@ -2,7 +2,7 @@ import { ConflictException, Inject, Injectable, Logger, NotFoundException } from
 import { v4 as uuid } from 'uuid';
 import type { Booking } from '@slot/shared';
 import { CALENDAR_PROVIDER, CalendarProvider } from '../calendar/calendar-provider.interface';
-import { scheduleConfig } from '../config/schedule.config';
+import { getHost } from '../config/schedule.config';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { BookingRepository } from './booking.repository';
 
@@ -22,11 +22,12 @@ export class BookingService {
 
   /** 슬롯을 예약하고 캘린더 이벤트(인비)를 생성한다. */
   async create(dto: CreateBookingDto): Promise<Booking> {
-    const cfg = scheduleConfig;
+    const cfg = getHost(dto.hostSlug);
     this.assertValidRange(dto.start, dto.end);
-    await this.assertSlotFree(dto.start, dto.end);
+    await this.assertSlotFree(cfg.calendarId, dto.start, dto.end);
 
     const event = await this.calendar.createEvent({
+      calendarId: cfg.calendarId,
       start: dto.start,
       end: dto.end,
       summary: `${cfg.hostName} ↔ ${dto.guestName}`,
@@ -39,6 +40,8 @@ export class BookingService {
 
     const booking: Booking = {
       id: uuid(),
+      hostSlug: cfg.slug,
+      calendarId: cfg.calendarId,
       start: dto.start,
       end: dto.end,
       guestName: dto.guestName,
@@ -72,7 +75,7 @@ export class BookingService {
     if (booking.status === 'cancelled') {
       return booking; // 이미 취소됨 (멱등)
     }
-    await this.calendar.deleteEvent(booking.calendarEventId);
+    await this.calendar.deleteEvent(booking.calendarId, booking.calendarEventId);
     const updated = this.repo.update(booking.id, { status: 'cancelled' });
     this.logger.log(`Booking ${booking.id} cancelled`);
     return updated ?? { ...booking, status: 'cancelled' };
@@ -86,10 +89,14 @@ export class BookingService {
     }
     this.assertValidRange(start, end);
     // 자기 자신의 현재 시간은 충돌에서 제외
-    await this.assertSlotFree(start, end, { start: booking.start, end: booking.end });
+    await this.assertSlotFree(booking.calendarId, start, end, {
+      start: booking.start,
+      end: booking.end,
+    });
 
-    const cfg = scheduleConfig;
-    const event = await this.calendar.updateEvent(booking.calendarEventId, {
+    const cfg = getHost(booking.hostSlug);
+    const event = await this.calendar.updateEvent(booking.calendarId, booking.calendarEventId, {
+      calendarId: booking.calendarId,
       start,
       end,
       summary: `${cfg.hostName} ↔ ${booking.guestName}`,
@@ -127,11 +134,16 @@ export class BookingService {
     }
   }
 
-  /** 해당 구간이 비어있는지 확인 (ignore 구간은 충돌에서 제외) */
-  private async assertSlotFree(start: string, end: string, ignore?: Interval): Promise<void> {
+  /** 해당 캘린더의 구간이 비어있는지 확인 (ignore 구간은 충돌에서 제외) */
+  private async assertSlotFree(
+    calendarId: string,
+    start: string,
+    end: string,
+    ignore?: Interval,
+  ): Promise<void> {
     const s = new Date(start).getTime();
     const e = new Date(end).getTime();
-    const busy = await this.calendar.getBusyIntervals(start, end);
+    const busy = await this.calendar.getBusyIntervals(calendarId, start, end);
     const taken = busy.some((b) => {
       if (ignore && b.start === ignore.start && b.end === ignore.end) return false;
       const bs = new Date(b.start).getTime();

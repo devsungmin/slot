@@ -32,6 +32,7 @@ export class AvailabilityService {
     }
 
     const busy = await this.calendar.getBusyIntervals(
+      cfg.calendarId,
       rangeStart.toISOString(),
       rangeEnd.toISOString(),
     );

@@ -92,7 +92,7 @@ npm run format       # Prettier 포맷 적용
 
 | 메서드 | 경로                                    | 설명                                           |
 | ------ | --------------------------------------- | ---------------------------------------------- |
-| GET    | `/api/schedule?from=&to=`               | 주간 그리드용 데이터(일자별 근무시간+바쁜시간) |
+| GET    | `/api/schedule?host=&from=&to=`         | 주간 그리드용 데이터(일자별 근무시간+바쁜시간) |
 | GET    | `/api/availability?from=&to=&duration=` | 기간 내 예약 가능한 30분 슬롯 목록             |
 | POST   | `/api/bookings`                         | 예약 → 캘린더 이벤트 생성 (인비 발송)          |
 | GET    | `/api/bookings`                         | (디버그) 생성된 예약 목록                      |
@@ -102,7 +102,13 @@ npm run format       # Prettier 포맷 적용
 | GET    | `/api/auth/google`                      | Google 동의 시작 (refresh token 발급용)        |
 | GET    | `/api/auth/google/callback`             | 동의 콜백 → refresh token 표시                 |
 
-예약 요청 필드: `start`, `end`, `guestName`, `guestEmail`, `guestPhone`(필수), `organization`(선택).
+예약 요청 필드: `start`, `end`, `guestName`, `guestEmail`, `guestPhone`(필수), `organization`(선택), `hostSlug`(선택).
+
+## 멀티 호스트
+
+- 호스트 레지스트리는 `apps/api/src/config/schedule.config.ts` 의 `hosts` 배열. 기본 호스트는 환경변수(`HOST_*`)에서, 추가 호스트는 코드에 등록.
+- 방문자는 `?host=<slug>` 로 호스트별 예약 페이지를 연다. 미지정/미존재 slug 는 기본 호스트로 폴백.
+- 호스트마다 `timezone` / `workingHours` / `calendarId` 를 가지며, 캘린더 작업(`getBusyIntervals`/`createEvent`/`updateEvent`/`deleteEvent`)은 해당 `calendarId` 로 수행된다.
 
 ## 영속화 / 환경변수
 
@@ -119,4 +125,5 @@ npm run format       # Prettier 포맷 적용
 - [x] 예약 영속화(JSON 파일) + 예약 취소/변경(관리 링크)
 - [x] 호스트 개인정보 환경변수화
 - [x] 방문자 타임존 선택 UI (그리드/라벨을 선택 타임존으로 렌더, 자정 넘김 처리)
-- [ ] (이후) 멀티 호스트(호스트별 예약 페이지)
+- [x] 멀티 호스트 (`?host=<slug>` 호스트별 예약 페이지, 호스트별 캘린더/근무시간)
+- [ ] (이후) 호스트 관리 UI, 알림(이메일/SMS), 배포

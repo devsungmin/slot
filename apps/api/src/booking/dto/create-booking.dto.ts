@@ -10,6 +10,10 @@ import {
 import type { CreateBookingRequest } from '@slot/shared';
 
 export class CreateBookingDto implements CreateBookingRequest {
+  @IsOptional()
+  @IsString()
+  hostSlug?: string;
+
   @IsISO8601()
   start!: string;
 

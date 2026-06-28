@@ -16,7 +16,6 @@ import { GoogleConfig, createOAuthClient } from './google-oauth';
 export class GoogleCalendarProvider implements CalendarProvider {
   private readonly logger = new Logger(GoogleCalendarProvider.name);
   private readonly calendar: calendar_v3.Calendar;
-  private readonly calendarId: string;
 
   constructor(cfg: GoogleConfig) {
     if (!cfg.clientId || !cfg.clientSecret || !cfg.refreshToken) {
@@ -27,19 +26,18 @@ export class GoogleCalendarProvider implements CalendarProvider {
     const auth = createOAuthClient(cfg);
     auth.setCredentials({ refresh_token: cfg.refreshToken });
     this.calendar = google.calendar({ version: 'v3', auth });
-    this.calendarId = cfg.calendarId;
-    this.logger.log(`GoogleCalendarProvider active (calendar: ${this.calendarId})`);
+    this.logger.log('GoogleCalendarProvider active');
   }
 
-  async getBusyIntervals(from: string, to: string): Promise<BusyInterval[]> {
+  async getBusyIntervals(calendarId: string, from: string, to: string): Promise<BusyInterval[]> {
     const res = await this.calendar.freebusy.query({
       requestBody: {
         timeMin: from,
         timeMax: to,
-        items: [{ id: this.calendarId }],
+        items: [{ id: calendarId }],
       },
     });
-    const busy = res.data.calendars?.[this.calendarId]?.busy ?? [];
+    const busy = res.data.calendars?.[calendarId]?.busy ?? [];
     return busy
       .filter((b): b is { start: string; end: string } => Boolean(b.start && b.end))
       .map((b) => ({ start: b.start, end: b.end }));
@@ -47,7 +45,7 @@ export class GoogleCalendarProvider implements CalendarProvider {
 
   async createEvent(input: CreateEventInput): Promise<CreatedEvent> {
     const res = await this.calendar.events.insert({
-      calendarId: this.calendarId,
+      calendarId: input.calendarId,
       sendUpdates: 'all', // 호스트·방문자에게 인비 메일 발송
       requestBody: {
         summary: input.summary,
@@ -65,9 +63,13 @@ export class GoogleCalendarProvider implements CalendarProvider {
     };
   }
 
-  async updateEvent(eventId: string, input: CreateEventInput): Promise<CreatedEvent> {
+  async updateEvent(
+    calendarId: string,
+    eventId: string,
+    input: CreateEventInput,
+  ): Promise<CreatedEvent> {
     const res = await this.calendar.events.update({
-      calendarId: this.calendarId,
+      calendarId,
       eventId,
       sendUpdates: 'all',
       requestBody: {
@@ -82,9 +84,9 @@ export class GoogleCalendarProvider implements CalendarProvider {
     return { id: res.data.id ?? eventId, htmlLink: res.data.htmlLink ?? undefined };
   }
 
-  async deleteEvent(eventId: string): Promise<void> {
+  async deleteEvent(calendarId: string, eventId: string): Promise<void> {
     await this.calendar.events.delete({
-      calendarId: this.calendarId,
+      calendarId,
       eventId,
       sendUpdates: 'all',
     });

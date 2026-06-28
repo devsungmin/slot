@@ -65,7 +65,10 @@ export const App = () => {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [booking, setBooking] = useState<Booking | null>(null);
 
-  // ── 예약 관리(취소/변경) 모드 ──
+  // URL 파라미터: ?host=<slug> (호스트별 예약 페이지), ?manage=<token> (예약 관리)
+  const [pageHost] = useState<string | null>(() =>
+    new URLSearchParams(window.location.search).get('host'),
+  );
   const [manageToken] = useState<string | null>(() =>
     new URLSearchParams(window.location.search).get('manage'),
   );
@@ -76,10 +79,10 @@ export const App = () => {
   const [cancelling, setCancelling] = useState(false);
   const [rescheduling, setRescheduling] = useState(false);
 
-  const refresh = () => {
+  const refresh = (slug?: string | null) => {
     setLoading(true);
     const { from, to } = loadRange();
-    return fetchSchedule(from, to)
+    return fetchSchedule(from, to, slug ?? pageHost)
       .then((data) => {
         setSchedule(data);
         setRange(defaultRangeFor(data.days, data.timezone));
@@ -91,13 +94,18 @@ export const App = () => {
   };
 
   useEffect(() => {
-    refresh();
     if (manageToken) {
+      // 예약 관리: 해당 예약의 호스트 일정을 불러온다.
       fetchBooking(manageToken)
-        .then(setManaged)
+        .then((b) => {
+          setManaged(b);
+          return refresh(b.hostSlug);
+        })
         .catch((err: unknown) =>
           setManageError(err instanceof Error ? err.message : '예약을 찾을 수 없어요.'),
         );
+    } else {
+      refresh();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -171,6 +179,7 @@ export const App = () => {
     setSubmitError(null);
     try {
       const result = await createBooking({
+        hostSlug: schedule?.hostSlug,
         start: confirmedSlot.start,
         end: confirmedSlot.end,
         ...values,
@@ -224,7 +233,7 @@ export const App = () => {
       setRescheduling(false);
       setSelection(null);
       setManageNotice('시간이 변경되었어요.');
-      refresh();
+      refresh(updated.hostSlug);
     } catch (err: unknown) {
       setManageError(err instanceof ApiRequestError ? err.message : '시간 변경에 실패했어요.');
     } finally {
