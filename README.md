@@ -38,6 +38,16 @@ npm run dev
 
 > 별도 설정 없이 **Mock 캘린더**로 바로 동작합니다. 실제 Google 캘린더 연동은 아래 [Google Calendar 연동](#-google-calendar-연동) 참고.
 
+### Docker로 실행
+
+```bash
+docker compose up --build   # web: http://localhost:8080
+```
+
+- `web`(nginx) 컨테이너가 정적 파일을 서빙하고 `/api` 를 `api` 컨테이너로 프록시한다.
+- 예약 데이터는 `slot-data` 볼륨(`/data/bookings.json`)에 영속화된다.
+- Google 연동/호스트 정보는 환경변수로 주입한다 (예: `HOST_NAME`, `CALENDAR_PROVIDER`, `GOOGLE_*`). 루트에 `.env` 를 두면 compose 가 읽는다.
+
 ### npm 스크립트
 
 | 명령                   | 설명                               |

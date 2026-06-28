@@ -1,0 +1,31 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    environment:
+      CALENDAR_PROVIDER: ${CALENDAR_PROVIDER:-mock}
+      HOST_SLUG: ${HOST_SLUG:-me}
+      HOST_NAME: ${HOST_NAME:-Slot Host}
+      HOST_EMAIL: ${HOST_EMAIL:-host@example.com}
+      HOST_TIMEZONE: ${HOST_TIMEZONE:-Asia/Seoul}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GOOGLE_REFRESH_TOKEN: ${GOOGLE_REFRESH_TOKEN:-}
+      GOOGLE_CALENDAR_ID: ${GOOGLE_CALENDAR_ID:-primary}
+    volumes:
+      - slot-data:/data
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    ports:
+      - '8080:80'
+    depends_on:
+      - api
+    restart: unless-stopped
+
+volumes:
+  slot-data:
