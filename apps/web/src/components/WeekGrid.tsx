@@ -1,12 +1,6 @@
 import { useMemo, useRef } from 'react';
 import type { BusyInterval, DaySchedule } from '@slot/shared';
-import {
-  dayOfMonth,
-  formatMinuteLabel,
-  minutesSinceMidnight,
-  wallTimeToInstant,
-  weekdayShort,
-} from '../utils/datetime';
+import { dayOfMonth, formatMinuteLabel, wallTimeToInstant, weekdayShort } from '../utils/datetime';
 
 /** 드래그로 선택된 약속 구간 (날짜키 + 자정 경과 분) */
 export interface GridSelection {
@@ -29,6 +23,8 @@ interface WeekGridProps {
 
 /** 1분당 픽셀 (1시간 = 60px) */
 const PX_PER_MIN = 1;
+/** 하루(분) */
+const DAY_MIN = 24 * 60;
 
 interface Segment {
   a: number;
@@ -75,60 +71,69 @@ export const WeekGrid = ({
   selection,
   onChange,
 }: WeekGridProps) => {
-  // 그리드 시간 축: 모든 날의 근무 시간대를 감싸는 정시 범위
-  const { gridStart, gridEnd } = useMemo(() => {
-    let min = 24 * 60;
+  // 표시 타임존 기준으로 각 날을 [자정, +24h) 창에 클립해 계산한다.
+  // (다른 타임존에선 호스트 근무대가 자정을 넘겨 두 컬럼에 나뉘어 보일 수 있다.)
+  const { layouts, gridStart, gridEnd } = useMemo(() => {
+    const nowMs = Date.now();
+    const clampDay = (a: number, b: number): Segment => ({
+      a: Math.max(0, Math.min(DAY_MIN, a)),
+      b: Math.max(0, Math.min(DAY_MIN, b)),
+    });
+
+    const perDay = days.map((day) => {
+      const midnight = wallTimeToInstant(day.date, 0, timezone).getTime();
+      const toMin = (iso: string) => (new Date(iso).getTime() - midnight) / 60_000;
+
+      const working = day.working
+        .map((w) => clampDay(toMin(w.start), toMin(w.end)))
+        .filter((s) => s.b > s.a);
+      const busySegs = busy
+        .map((b) => clampDay(toMin(b.start), toMin(b.end)))
+        .filter((s) => s.b > s.a);
+
+      // 과거(지금 + 최소 공지) 차단
+      const cutoff = (nowMs - midnight) / 60_000 + minNoticeHours * 60;
+      const pastHole: Segment[] = cutoff > 0 ? [{ a: 0, b: Math.min(cutoff, DAY_MIN) }] : [];
+
+      const free = subtract(working, [...busySegs, ...pastHole]).filter(
+        (s) => s.b - s.a >= snapMin,
+      );
+      return { day, midnight, working, busySegs, free };
+    });
+
+    // 보이는 근무대를 감싸는 정시 범위 ([0,1440]로 제한)
+    let min = DAY_MIN;
     let max = 0;
-    for (const d of days) {
+    for (const d of perDay) {
       for (const w of d.working) {
-        min = Math.min(min, minutesSinceMidnight(w.start, timezone));
-        max = Math.max(max, minutesSinceMidnight(w.end, timezone));
+        min = Math.min(min, w.a);
+        max = Math.max(max, w.b);
       }
     }
     if (min >= max) {
       min = 9 * 60;
       max = 18 * 60;
     }
-    return { gridStart: Math.floor(min / 60) * 60, gridEnd: Math.ceil(max / 60) * 60 };
-  }, [days, timezone]);
+    const gStart = Math.max(0, Math.floor(min / 60) * 60);
+    const gEnd = Math.min(DAY_MIN, Math.ceil(max / 60) * 60);
+
+    const toBlock = (s: Segment): Block => ({
+      top: (s.a - gStart) * PX_PER_MIN,
+      height: (s.b - s.a) * PX_PER_MIN,
+    });
+
+    const computed: DayLayout[] = perDay.map((d) => ({
+      day: d.day,
+      midnight: d.midnight,
+      working: d.working.map(toBlock),
+      busy: d.busySegs.map(toBlock),
+      free: d.free,
+    }));
+
+    return { layouts: computed, gridStart: gStart, gridEnd: gEnd };
+  }, [days, busy, timezone, snapMin, minNoticeHours]);
 
   const gridHeight = (gridEnd - gridStart) * PX_PER_MIN;
-  const nowMs = Date.now();
-
-  const layouts = useMemo<DayLayout[]>(() => {
-    return days.map((day) => {
-      const midnight = wallTimeToInstant(day.date, 0, timezone).getTime();
-      const toMin = (iso: string) => (new Date(iso).getTime() - midnight) / 60_000;
-
-      const working: Segment[] = day.working.map((w) => ({ a: toMin(w.start), b: toMin(w.end) }));
-
-      const busySegs: Segment[] = busy
-        .map((b) => ({ a: toMin(b.start), b: toMin(b.end) }))
-        .filter((s) => s.b > gridStart && s.a < gridEnd)
-        .map((s) => ({ a: Math.max(s.a, gridStart), b: Math.min(s.b, gridEnd) }));
-
-      // 과거(지금 + 최소 공지) 차단
-      const cutoff = (nowMs - midnight) / 60_000 + minNoticeHours * 60;
-      const pastHole: Segment[] = cutoff > gridStart ? [{ a: gridStart, b: cutoff }] : [];
-
-      const free = subtract(working, [...busySegs, ...pastHole]).filter(
-        (s) => s.b - s.a >= snapMin,
-      );
-
-      const toBlock = (s: Segment): Block => ({
-        top: (s.a - gridStart) * PX_PER_MIN,
-        height: (s.b - s.a) * PX_PER_MIN,
-      });
-
-      return {
-        day,
-        midnight,
-        working: working.map(toBlock),
-        busy: busySegs.map(toBlock),
-        free,
-      };
-    });
-  }, [days, busy, timezone, gridStart, gridEnd, snapMin, minNoticeHours, nowMs]);
 
   const hours: number[] = [];
   for (let h = gridStart / 60; h <= gridEnd / 60; h += 1) hours.push(h);

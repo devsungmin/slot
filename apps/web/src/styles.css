@@ -64,6 +64,37 @@ body {
   font-size: 14px;
 }
 
+/* Timezone select */
+.tzselect {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  padding: 5px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #fff;
+  font-size: 13px;
+}
+
+.tzselect__icon {
+  font-size: 13px;
+}
+
+.tzselect__field {
+  border: none;
+  background: transparent;
+  font: inherit;
+  font-size: 13px;
+  color: var(--ink);
+  cursor: pointer;
+  max-width: 260px;
+}
+
+.tzselect__field:focus {
+  outline: none;
+}
+
 /* Card */
 .card {
   background: var(--card);

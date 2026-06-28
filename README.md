@@ -133,7 +133,7 @@ slot/
 - [x] Google OAuth + Calendar API 실연동
 - [x] 예약 영속화 (JSON 파일)
 - [x] 예약 취소 / 변경 (관리 링크 `?manage=<token>`)
-- [ ] 방문자 타임존 선택 UI
+- [x] 방문자 타임존 선택 UI
 - [ ] 멀티 호스트(호스트별 예약 페이지)
 
 ## 🤝 기여

@@ -13,6 +13,7 @@ import { DatePickerPopover } from './components/DatePickerPopover';
 import { BookingForm, type BookingFormValues } from './components/BookingForm';
 import { Confirmation } from './components/Confirmation';
 import { ManageBooking } from './components/ManageBooking';
+import { TimezoneSelect } from './components/TimezoneSelect';
 import {
   addDaysToKey,
   dateKey,
@@ -68,6 +69,7 @@ export const App = () => {
   const [manageToken] = useState<string | null>(() =>
     new URLSearchParams(window.location.search).get('manage'),
   );
+  const [userTz, setUserTz] = useState<string | null>(null);
   const [managed, setManaged] = useState<Booking | null>(null);
   const [manageError, setManageError] = useState<string | null>(null);
   const [manageNotice, setManageNotice] = useState<string | null>(null);
@@ -100,7 +102,9 @@ export const App = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // 호스트 타임존(구조/날짜키 계산용)과 방문자가 고른 표시 타임존을 구분한다.
   const timezone = schedule?.timezone ?? 'Asia/Seoul';
+  const displayTz = userTz ?? timezone;
   const hostName = schedule?.hostName ?? 'Slot';
   const snapMin = schedule?.slotMinutes ?? DURATION_MIN;
   const todayKey = dateKey(new Date().toISOString(), timezone);
@@ -150,8 +154,8 @@ export const App = () => {
   };
 
   const selectionToSlot = (sel: GridSelection): TimeSlot => ({
-    start: wallTimeToInstant(sel.dateKey, sel.startMin, timezone).toISOString(),
-    end: wallTimeToInstant(sel.dateKey, sel.endMin, timezone).toISOString(),
+    start: wallTimeToInstant(sel.dateKey, sel.startMin, displayTz).toISOString(),
+    end: wallTimeToInstant(sel.dateKey, sel.endMin, displayTz).toISOString(),
   });
 
   const handleConfirmSelection = () => {
@@ -270,7 +274,7 @@ export const App = () => {
       <WeekGrid
         days={visibleDays}
         busy={schedule?.busy ?? []}
-        timezone={timezone}
+        timezone={displayTz}
         snapMin={snapMin}
         minNoticeHours={schedule?.minNoticeHours ?? 0}
         todayKey={todayKey}
@@ -318,7 +322,7 @@ export const App = () => {
         {manageNotice && <p className="notice">{manageNotice}</p>}
         <ManageBooking
           booking={managed}
-          timezone={timezone}
+          timezone={displayTz}
           cancelling={cancelling}
           error={manageError}
           onReschedule={() => {
@@ -338,6 +342,7 @@ export const App = () => {
         <p className="brand__tagline">
           {manageToken ? '예약 관리' : `${hostName}님과 약속 잡기 · 빈 시간을 드래그하세요`}
         </p>
+        {schedule && <TimezoneSelect value={displayTz} hostTz={timezone} onChange={setUserTz} />}
       </header>
 
       <main className="card">
@@ -353,7 +358,7 @@ export const App = () => {
             {step === 'form' && confirmedSlot && (
               <BookingForm
                 slot={confirmedSlot}
-                timezone={timezone}
+                timezone={displayTz}
                 submitting={submitting}
                 error={submitError}
                 onSubmit={handleSubmit}
@@ -362,13 +367,13 @@ export const App = () => {
             )}
 
             {step === 'confirmed' && booking && (
-              <Confirmation booking={booking} timezone={timezone} onReset={handleReset} />
+              <Confirmation booking={booking} timezone={displayTz} onReset={handleReset} />
             )}
           </>
         )}
       </main>
 
-      <footer className="foot">Powered by Slot · 시간대 {timezone}</footer>
+      <footer className="foot">Powered by Slot · 시간대 {displayTz}</footer>
     </div>
   );
 };
