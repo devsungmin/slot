@@ -40,7 +40,8 @@ slot/
     │       ├── calendar/       # CalendarProvider 추상화 (Mock ↔ Google), google-oauth 헬퍼
     │       ├── availability/   # 가용 슬롯 계산 + GET /api/availability
     │       ├── schedule/       # 주간 그리드용 원본 데이터 + GET /api/schedule
-    │       ├── booking/        # 예약 생성 + POST /api/bookings
+    │       ├── booking/        # 예약 생성/취소/변경 + POST /api/bookings
+    │       ├── notification/   # 알림 추상화 (Mock ↔ Email/SMTP)
     │       └── auth/           # Google OAuth 동의 플로우 (refresh token 발급)
     └── web/                # React + Vite 프론트엔드 (포트 5173)
         └── src/
@@ -127,4 +128,5 @@ npm run format       # Prettier 포맷 적용
 - [x] 방문자 타임존 선택 UI (그리드/라벨을 선택 타임존으로 렌더, 자정 넘김 처리)
 - [x] 멀티 호스트 (`?host=<slug>` 호스트별 예약 페이지, 호스트별 캘린더/근무시간)
 - [x] 배포: Docker (api 멀티스테이지 + web nginx 프록시) + docker-compose (데이터 볼륨)
-- [ ] (이후) 호스트 관리 UI, 알림(이메일/SMS)
+- [x] 알림: NotificationProvider 추상화 (Mock 콘솔 ↔ Email/SMTP), 생성/변경/취소 시 발송
+- [ ] (이후) 호스트 관리 UI, SMS 알림

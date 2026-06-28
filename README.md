@@ -145,6 +145,8 @@ slot/
 - [x] 예약 취소 / 변경 (관리 링크 `?manage=<token>`)
 - [x] 방문자 타임존 선택 UI
 - [x] 멀티 호스트 (`?host=<slug>` 호스트별 예약 페이지)
+- [x] 알림 (Mock 콘솔 ↔ Email/SMTP, 예약 생성/변경/취소 시 발송)
+- [x] Docker 배포 (compose)
 
 ## 🤝 기여
 

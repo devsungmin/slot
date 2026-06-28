@@ -2,6 +2,10 @@ import { ConflictException, Inject, Injectable, Logger, NotFoundException } from
 import { v4 as uuid } from 'uuid';
 import type { Booking } from '@slot/shared';
 import { CALENDAR_PROVIDER, CalendarProvider } from '../calendar/calendar-provider.interface';
+import {
+  NOTIFICATION_PROVIDER,
+  NotificationProvider,
+} from '../notification/notification-provider.interface';
 import { getHost } from '../config/schedule.config';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { BookingRepository } from './booking.repository';
@@ -17,6 +21,7 @@ export class BookingService {
 
   constructor(
     @Inject(CALENDAR_PROVIDER) private readonly calendar: CalendarProvider,
+    @Inject(NOTIFICATION_PROVIDER) private readonly notifier: NotificationProvider,
     private readonly repo: BookingRepository,
   ) {}
 
@@ -57,6 +62,7 @@ export class BookingService {
 
     this.repo.create(booking);
     this.logger.log(`Booking ${booking.id} created for ${dto.guestEmail} @ ${dto.start}`);
+    await this.notify((n) => n.bookingCreated(booking));
     return booking;
   }
 
@@ -76,9 +82,13 @@ export class BookingService {
       return booking; // 이미 취소됨 (멱등)
     }
     await this.calendar.deleteEvent(booking.calendarId, booking.calendarEventId);
-    const updated = this.repo.update(booking.id, { status: 'cancelled' });
+    const updated = this.repo.update(booking.id, { status: 'cancelled' }) ?? {
+      ...booking,
+      status: 'cancelled' as const,
+    };
     this.logger.log(`Booking ${booking.id} cancelled`);
-    return updated ?? { ...booking, status: 'cancelled' };
+    await this.notify((n) => n.bookingCancelled(updated));
+    return updated;
   }
 
   /** 예약 시간 변경 → 캘린더 이벤트 업데이트 */
@@ -107,13 +117,15 @@ export class BookingService {
       timezone: cfg.timezone,
     });
 
-    const updated = this.repo.update(booking.id, {
-      start,
-      end,
-      htmlLink: event.htmlLink ?? booking.htmlLink,
-    });
+    const updated =
+      this.repo.update(booking.id, {
+        start,
+        end,
+        htmlLink: event.htmlLink ?? booking.htmlLink,
+      }) ?? booking;
     this.logger.log(`Booking ${booking.id} rescheduled → ${start}`);
-    return updated ?? booking;
+    await this.notify((n) => n.bookingRescheduled(updated));
+    return updated;
   }
 
   /** (디버그) 생성된 예약 목록 */
@@ -122,6 +134,15 @@ export class BookingService {
   }
 
   // ── helpers ──
+
+  /** 알림 발송 (실패해도 예약 흐름을 막지 않는다) */
+  private async notify(fn: (n: NotificationProvider) => Promise<void>): Promise<void> {
+    try {
+      await fn(this.notifier);
+    } catch (err) {
+      this.logger.warn(`알림 발송 실패: ${String(err)}`);
+    }
+  }
 
   private assertValidRange(start: string, end: string): void {
     const s = new Date(start).getTime();
