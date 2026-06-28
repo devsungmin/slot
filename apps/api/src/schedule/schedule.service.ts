@@ -67,6 +67,7 @@ export class ScheduleService {
     );
 
     return {
+      hostName: cfg.hostName,
       timezone: cfg.timezone,
       minNoticeHours: cfg.minNoticeHours,
       slotMinutes: cfg.slotMinutes,

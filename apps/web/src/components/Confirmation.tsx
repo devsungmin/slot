@@ -41,8 +41,15 @@ export const Confirmation = ({ booking, timezone, onReset }: ConfirmationProps) 
         캘린더에서 보기
       </a>
     )}
+    <a className="btn-ghost" href={`/?manage=${booking.cancelToken}`}>
+      예약 변경 / 취소
+    </a>
     <button className="btn-ghost" onClick={onReset}>
       다른 시간 예약하기
     </button>
+
+    <p className="confirmation__hint">
+      이 링크를 저장해두면 나중에 예약을 변경하거나 취소할 수 있어요.
+    </p>
   </div>
 );

@@ -66,3 +66,20 @@ export const createBooking = (payload: CreateBookingRequest): Promise<Booking> =
     method: 'POST',
     body: JSON.stringify(payload),
   });
+
+/** 예약 관리 토큰으로 단건 조회 */
+export const fetchBooking = (token: string): Promise<Booking> =>
+  request<Booking>(`/bookings/${encodeURIComponent(token)}`);
+
+/** 예약 시간 변경 */
+export const rescheduleBooking = (token: string, start: string, end: string): Promise<Booking> =>
+  request<Booking>(`/bookings/${encodeURIComponent(token)}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ start, end }),
+  });
+
+/** 예약 취소 */
+export const cancelBooking = (token: string): Promise<Booking> =>
+  request<Booking>(`/bookings/${encodeURIComponent(token)}`, {
+    method: 'DELETE',
+  });

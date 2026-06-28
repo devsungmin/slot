@@ -1,10 +1,18 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { Booking, DaySchedule, ScheduleResponse, TimeSlot } from '@slot/shared';
-import { ApiRequestError, createBooking, fetchSchedule } from './api';
+import {
+  ApiRequestError,
+  cancelBooking,
+  createBooking,
+  fetchBooking,
+  fetchSchedule,
+  rescheduleBooking,
+} from './api';
 import { WeekGrid, type GridSelection } from './components/WeekGrid';
 import { DatePickerPopover } from './components/DatePickerPopover';
 import { BookingForm, type BookingFormValues } from './components/BookingForm';
 import { Confirmation } from './components/Confirmation';
+import { ManageBooking } from './components/ManageBooking';
 import {
   addDaysToKey,
   dateKey,
@@ -16,8 +24,6 @@ import {
   weekdayOfKey,
 } from './utils/datetime';
 
-/** 호스트 정보 (데모용 고정값) */
-const HOST_NAME = 'Sungmin Kim';
 const DURATION_MIN = 30;
 const LOOKAHEAD_DAYS = 14;
 /** 한 번에 선택 가능한 최대 일수 */
@@ -58,6 +64,16 @@ export const App = () => {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [booking, setBooking] = useState<Booking | null>(null);
 
+  // ── 예약 관리(취소/변경) 모드 ──
+  const [manageToken] = useState<string | null>(() =>
+    new URLSearchParams(window.location.search).get('manage'),
+  );
+  const [managed, setManaged] = useState<Booking | null>(null);
+  const [manageError, setManageError] = useState<string | null>(null);
+  const [manageNotice, setManageNotice] = useState<string | null>(null);
+  const [cancelling, setCancelling] = useState(false);
+  const [rescheduling, setRescheduling] = useState(false);
+
   const refresh = () => {
     setLoading(true);
     const { from, to } = loadRange();
@@ -74,10 +90,18 @@ export const App = () => {
 
   useEffect(() => {
     refresh();
+    if (manageToken) {
+      fetchBooking(manageToken)
+        .then(setManaged)
+        .catch((err: unknown) =>
+          setManageError(err instanceof Error ? err.message : '예약을 찾을 수 없어요.'),
+        );
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const timezone = schedule?.timezone ?? 'Asia/Seoul';
+  const hostName = schedule?.hostName ?? 'Slot';
   const snapMin = schedule?.slotMinutes ?? DURATION_MIN;
   const todayKey = dateKey(new Date().toISOString(), timezone);
   const allDays = useMemo(() => schedule?.days ?? [], [schedule]);
@@ -88,7 +112,6 @@ export const App = () => {
     return map;
   }, [allDays]);
 
-  // 표시 범위의 날짜들 (스케줄에 없는 과거/범위 밖 날짜는 빈 근무일로 합성)
   const visibleDays = useMemo<DaySchedule[]>(() => {
     if (!range) return [];
     const count = diffDaysKey(range.start, range.end) + 1;
@@ -126,11 +149,14 @@ export const App = () => {
     setSelection(null);
   };
 
+  const selectionToSlot = (sel: GridSelection): TimeSlot => ({
+    start: wallTimeToInstant(sel.dateKey, sel.startMin, timezone).toISOString(),
+    end: wallTimeToInstant(sel.dateKey, sel.endMin, timezone).toISOString(),
+  });
+
   const handleConfirmSelection = () => {
     if (!selection) return;
-    const start = wallTimeToInstant(selection.dateKey, selection.startMin, timezone).toISOString();
-    const end = wallTimeToInstant(selection.dateKey, selection.endMin, timezone).toISOString();
-    setConfirmedSlot({ start, end });
+    setConfirmedSlot(selectionToSlot(selection));
     setSubmitError(null);
     setStep('form');
   };
@@ -148,11 +174,11 @@ export const App = () => {
       setBooking(result);
       setStep('confirmed');
     } catch (err: unknown) {
-      const message =
+      setSubmitError(
         err instanceof ApiRequestError
           ? err.message
-          : '예약 중 문제가 발생했어요. 다시 시도해주세요.';
-      setSubmitError(message);
+          : '예약 중 문제가 발생했어요. 다시 시도해주세요.',
+      );
     } finally {
       setSubmitting(false);
     }
@@ -167,94 +193,178 @@ export const App = () => {
     refresh();
   };
 
+  // ── 관리: 취소 / 변경 ──
+  const handleCancel = async () => {
+    if (!manageToken) return;
+    setCancelling(true);
+    setManageError(null);
+    try {
+      const updated = await cancelBooking(manageToken);
+      setManaged(updated);
+      setManageNotice('예약이 취소되었어요.');
+    } catch (err: unknown) {
+      setManageError(err instanceof ApiRequestError ? err.message : '취소에 실패했어요.');
+    } finally {
+      setCancelling(false);
+    }
+  };
+
+  const handleRescheduleConfirm = async () => {
+    if (!selection || !manageToken) return;
+    const slot = selectionToSlot(selection);
+    setSubmitting(true);
+    setManageError(null);
+    try {
+      const updated = await rescheduleBooking(manageToken, slot.start, slot.end);
+      setManaged(updated);
+      setRescheduling(false);
+      setSelection(null);
+      setManageNotice('시간이 변경되었어요.');
+      refresh();
+    } catch (err: unknown) {
+      setManageError(err instanceof ApiRequestError ? err.message : '시간 변경에 실패했어요.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const selectionLabel = selection
     ? `${formatDateLabel(`${selection.dateKey}T12:00:00`, timezone)} · ${formatMinuteLabel(
         selection.startMin,
       )} – ${formatMinuteLabel(selection.endMin)}`
     : '';
 
+  /** 신규 예약과 시간 변경이 공유하는 선택 그리드 */
+  const renderScheduler = (confirmLabel: string, onConfirm: () => void, busy: boolean) => (
+    <>
+      <div className="weeknav">
+        <div className="weeknav__center">
+          <button
+            className="weeknav__label"
+            aria-haspopup="dialog"
+            aria-expanded={pickerOpen}
+            onClick={() => setPickerOpen((v) => !v)}
+          >
+            📅 {rangeLabel} ▾
+          </button>
+          {pickerOpen && (
+            <DatePickerPopover
+              selectableMin={selectableMin}
+              selectableMax={selectableMax}
+              workingDates={workingDates}
+              rangeStart={range?.start ?? todayKey}
+              rangeEnd={range?.end ?? todayKey}
+              maxSpanDays={MAX_SPAN_DAYS}
+              initialMonth={pickerMonth}
+              todayKey={todayKey}
+              onPick={handlePickRange}
+              onClose={() => setPickerOpen(false)}
+            />
+          )}
+        </div>
+        <button className="weeknav__btn" onClick={handleThisWeek}>
+          이번 주
+        </button>
+      </div>
+
+      <WeekGrid
+        days={visibleDays}
+        busy={schedule?.busy ?? []}
+        timezone={timezone}
+        snapMin={snapMin}
+        minNoticeHours={schedule?.minNoticeHours ?? 0}
+        todayKey={todayKey}
+        selection={selection}
+        onChange={setSelection}
+      />
+
+      <div className={`actionbar${selection ? ' is-active' : ''}`}>
+        <span className="actionbar__label">
+          {selection ? selectionLabel : '빈 시간을 드래그해 약속 시간을 선택하세요'}
+        </span>
+        <button className="btn-primary" disabled={!selection || busy} onClick={onConfirm}>
+          {busy ? '처리 중…' : confirmLabel}
+        </button>
+      </div>
+      {manageError && rescheduling && <p className="form-error">{manageError}</p>}
+    </>
+  );
+
+  const renderManage = () => {
+    if (manageError && !managed) return <p className="form-error">{manageError}</p>;
+    if (!managed) return <p className="empty">예약을 불러오는 중…</p>;
+
+    // 시간 변경 모드: 선택 그리드 재사용
+    if (rescheduling && managed.status !== 'cancelled') {
+      return (
+        <>
+          <h1 className="section-title">새로운 시간 선택</h1>
+          {!loading && renderScheduler('이 시간으로 변경', handleRescheduleConfirm, submitting)}
+          <button
+            className="btn-ghost manage__back"
+            onClick={() => {
+              setRescheduling(false);
+              setSelection(null);
+            }}
+          >
+            취소하고 돌아가기
+          </button>
+        </>
+      );
+    }
+
+    return (
+      <>
+        {manageNotice && <p className="notice">{manageNotice}</p>}
+        <ManageBooking
+          booking={managed}
+          timezone={timezone}
+          cancelling={cancelling}
+          error={manageError}
+          onReschedule={() => {
+            setManageNotice(null);
+            setRescheduling(true);
+          }}
+          onCancel={handleCancel}
+        />
+      </>
+    );
+  };
+
   return (
     <div className="page page--wide">
       <header className="brand">
         <div className="brand__logo">Slot</div>
-        <p className="brand__tagline">{HOST_NAME}님과 약속 잡기 · 빈 시간을 드래그하세요</p>
+        <p className="brand__tagline">
+          {manageToken ? '예약 관리' : `${hostName}님과 약속 잡기 · 빈 시간을 드래그하세요`}
+        </p>
       </header>
 
       <main className="card">
         {loading && <p className="empty">일정을 불러오는 중…</p>}
         {!loading && loadError && <p className="form-error">{loadError}</p>}
 
-        {!loading && !loadError && step === 'select' && (
+        {!loading && !loadError && manageToken && renderManage()}
+
+        {!loading && !loadError && !manageToken && (
           <>
-            <div className="weeknav">
-              <div className="weeknav__center">
-                <button
-                  className="weeknav__label"
-                  aria-haspopup="dialog"
-                  aria-expanded={pickerOpen}
-                  onClick={() => setPickerOpen((v) => !v)}
-                >
-                  📅 {rangeLabel} ▾
-                </button>
-                {pickerOpen && (
-                  <DatePickerPopover
-                    selectableMin={selectableMin}
-                    selectableMax={selectableMax}
-                    workingDates={workingDates}
-                    rangeStart={range?.start ?? todayKey}
-                    rangeEnd={range?.end ?? todayKey}
-                    maxSpanDays={MAX_SPAN_DAYS}
-                    initialMonth={pickerMonth}
-                    todayKey={todayKey}
-                    onPick={handlePickRange}
-                    onClose={() => setPickerOpen(false)}
-                  />
-                )}
-              </div>
-              <button className="weeknav__btn" onClick={handleThisWeek}>
-                이번 주
-              </button>
-            </div>
+            {step === 'select' && renderScheduler('예약하기', handleConfirmSelection, false)}
 
-            <WeekGrid
-              days={visibleDays}
-              busy={schedule?.busy ?? []}
-              timezone={timezone}
-              snapMin={snapMin}
-              minNoticeHours={schedule?.minNoticeHours ?? 0}
-              todayKey={todayKey}
-              selection={selection}
-              onChange={setSelection}
-            />
+            {step === 'form' && confirmedSlot && (
+              <BookingForm
+                slot={confirmedSlot}
+                timezone={timezone}
+                submitting={submitting}
+                error={submitError}
+                onSubmit={handleSubmit}
+                onBack={() => setStep('select')}
+              />
+            )}
 
-            <div className={`actionbar${selection ? ' is-active' : ''}`}>
-              <span className="actionbar__label">
-                {selection ? selectionLabel : '빈 시간을 드래그해 약속 시간을 선택하세요'}
-              </span>
-              <button
-                className="btn-primary"
-                disabled={!selection}
-                onClick={handleConfirmSelection}
-              >
-                예약하기
-              </button>
-            </div>
+            {step === 'confirmed' && booking && (
+              <Confirmation booking={booking} timezone={timezone} onReset={handleReset} />
+            )}
           </>
-        )}
-
-        {step === 'form' && confirmedSlot && (
-          <BookingForm
-            slot={confirmedSlot}
-            timezone={timezone}
-            submitting={submitting}
-            error={submitError}
-            onSubmit={handleSubmit}
-            onBack={() => setStep('select')}
-          />
-        )}
-
-        {step === 'confirmed' && booking && (
-          <Confirmation booking={booking} timezone={timezone} onReset={handleReset} />
         )}
       </main>
 

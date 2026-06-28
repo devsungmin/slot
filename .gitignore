@@ -9,6 +9,10 @@ build/
 out/
 *.tsbuildinfo
 
+# ── 런타임 데이터 (예약 JSON 저장소) ──
+data/
+apps/api/data/
+
 # ── 환경변수 / 비밀값 (절대 커밋 금지) ──
 .env
 .env.*

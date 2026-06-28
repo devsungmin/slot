@@ -31,6 +31,12 @@ export interface CalendarProvider {
 
   /** 이벤트(인비)를 생성하고 호스트·방문자를 참석자로 추가 */
   createEvent(input: CreateEventInput): Promise<CreatedEvent>;
+
+  /** 이벤트 수정 (시간 변경 등) → 참석자에게 업데이트 발송 */
+  updateEvent(eventId: string, input: CreateEventInput): Promise<CreatedEvent>;
+
+  /** 이벤트 삭제 → 참석자에게 취소 발송 */
+  deleteEvent(eventId: string): Promise<void>;
 }
 
 /** NestJS DI 토큰 */

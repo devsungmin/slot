@@ -96,10 +96,19 @@ npm run format       # Prettier 포맷 적용
 | GET    | `/api/availability?from=&to=&duration=` | 기간 내 예약 가능한 30분 슬롯 목록             |
 | POST   | `/api/bookings`                         | 예약 → 캘린더 이벤트 생성 (인비 발송)          |
 | GET    | `/api/bookings`                         | (디버그) 생성된 예약 목록                      |
+| GET    | `/api/bookings/:token`                  | 예약 관리 토큰으로 단건 조회                   |
+| PATCH  | `/api/bookings/:token`                  | 예약 시간 변경 → 이벤트 업데이트               |
+| DELETE | `/api/bookings/:token`                  | 예약 취소 → 이벤트 삭제                        |
 | GET    | `/api/auth/google`                      | Google 동의 시작 (refresh token 발급용)        |
 | GET    | `/api/auth/google/callback`             | 동의 콜백 → refresh token 표시                 |
 
 예약 요청 필드: `start`, `end`, `guestName`, `guestEmail`, `guestPhone`(필수), `organization`(선택).
+
+## 영속화 / 환경변수
+
+- 예약은 무거운 DB 없이 **JSON 파일**(`apps/api/data/bookings.json`, gitignore)에 저장한다. Google 캘린더가 일정의 source of truth 이므로, 여기서는 "토큰 → 이벤트 매핑 + 방문자 정보"만 보관한다.
+- 방문자는 예약 시 받은 `?manage=<token>` 링크로 취소/변경할 수 있다.
+- 호스트 개인정보는 환경변수로 관리: `HOST_NAME`, `HOST_EMAIL`, `HOST_TIMEZONE` (소스에 하드코딩 금지).
 
 ## 현재 상태 / 다음 단계
 
@@ -107,4 +116,6 @@ npm run format       # Prettier 포맷 적용
 - [x] 백엔드: 가용 슬롯/주간 스케줄 계산 + 예약(이벤트 생성)
 - [x] 프론트엔드: 주간 시간 그리드 드래그 선택 + 날짜 피커(하루/범위) + 예약 폼/확인
 - [x] Google OAuth + Calendar API 실연동 (env로 Mock↔Google 전환, 동의 플로우 포함)
-- [ ] (이후) 예약 영속화(DB), 예약 취소/변경, 멀티 호스트, 타임존 선택 UI
+- [x] 예약 영속화(JSON 파일) + 예약 취소/변경(관리 링크)
+- [x] 호스트 개인정보 환경변수화
+- [ ] (이후) 방문자 타임존 선택 UI, 멀티 호스트(호스트별 예약 페이지)

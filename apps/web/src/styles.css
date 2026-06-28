@@ -645,6 +645,83 @@ body {
   color: var(--muted);
 }
 
+/* Manage booking */
+.manage {
+  max-width: 440px;
+  margin: 0 auto;
+}
+
+.manage__card {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 8px 16px;
+  margin: 6px 0 18px;
+}
+
+.manage__card.is-cancelled {
+  opacity: 0.7;
+}
+
+.manage__row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.manage__row:last-child {
+  border-bottom: none;
+}
+
+.manage__row span {
+  color: var(--muted);
+}
+
+.manage__status--ok {
+  color: var(--ok);
+}
+
+.manage__status--cancelled {
+  color: var(--danger);
+}
+
+.manage__back {
+  display: block;
+  margin: 14px auto 0;
+}
+
+.form-actions--center {
+  justify-content: center;
+}
+
+.btn-danger {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+.btn-danger:hover {
+  background: #fdecea;
+}
+
+.notice {
+  background: #e6f4ea;
+  color: var(--ok);
+  border: 1px solid #b7e1c2;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 14px;
+  text-align: center;
+  margin: 0 auto 14px;
+  max-width: 440px;
+}
+
+.confirmation__hint {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 4px 0 0;
+}
+
 /* Footer */
 .foot {
   text-align: center;

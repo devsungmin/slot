@@ -45,6 +45,8 @@ export interface DaySchedule {
  * 프론트엔드가 주간 그리드를 그리고, 빈 시간만 드래그로 선택할 수 있게 하는 데 필요한 원본 데이터.
  */
 export interface ScheduleResponse {
+  /** 호스트 표시 이름 */
+  hostName: string;
   /** 호스트 타임존 (IANA) */
   timezone: string;
   /** 최소 공지 시간(시간) — 지금으로부터 이 시간 이후만 예약 가능 */
@@ -73,6 +75,9 @@ export interface CreateBookingRequest {
   organization?: string;
 }
 
+/** 예약 상태 */
+export type BookingStatus = 'confirmed' | 'cancelled';
+
 /** 생성된 예약 + 캘린더 이벤트 결과 */
 export interface Booking {
   id: string;
@@ -86,8 +91,18 @@ export interface Booking {
   calendarEventId: string;
   /** 캘린더 이벤트로 연결되는 링크 (있을 경우) */
   htmlLink?: string;
+  /** 예약 상태 */
+  status: BookingStatus;
+  /** 방문자가 취소/변경할 때 쓰는 토큰 (예약 관리 링크용) */
+  cancelToken: string;
   /** 예약 생성 시각 (ISO 8601) */
   createdAt: string;
+}
+
+/** PATCH /api/bookings/:token 요청 — 시간 변경 */
+export interface RescheduleRequest {
+  start: string;
+  end: string;
 }
 
 /** API 공통 에러 형태 */

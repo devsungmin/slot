@@ -64,4 +64,30 @@ export class GoogleCalendarProvider implements CalendarProvider {
       htmlLink: res.data.htmlLink ?? undefined,
     };
   }
+
+  async updateEvent(eventId: string, input: CreateEventInput): Promise<CreatedEvent> {
+    const res = await this.calendar.events.update({
+      calendarId: this.calendarId,
+      eventId,
+      sendUpdates: 'all',
+      requestBody: {
+        summary: input.summary,
+        description: input.description,
+        start: { dateTime: input.start, timeZone: input.timezone },
+        end: { dateTime: input.end, timeZone: input.timezone },
+        attendees: [{ email: input.guestEmail, displayName: input.guestName }],
+      },
+    });
+    this.logger.log(`Updated Google event ${eventId}`);
+    return { id: res.data.id ?? eventId, htmlLink: res.data.htmlLink ?? undefined };
+  }
+
+  async deleteEvent(eventId: string): Promise<void> {
+    await this.calendar.events.delete({
+      calendarId: this.calendarId,
+      eventId,
+      sendUpdates: 'all',
+    });
+    this.logger.log(`Deleted Google event ${eventId}`);
+  }
 }
