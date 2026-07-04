@@ -20,6 +20,33 @@ export interface TimeSlot {
   end: string;
 }
 
+/** 하루 안에서의 근무 시간대 ("HH:mm" ~ "HH:mm", 호스트 로컬 타임존 기준) */
+export interface WorkingWindow {
+  start: string;
+  end: string;
+}
+
+/**
+ * 호스트 설정 (관리 API 계약).
+ * 백엔드 호스트 레지스트리와 관리 UI 가 이 형태를 주고받는다.
+ */
+export interface HostSettings {
+  /** URL 식별자 (?host=<slug>) */
+  slug: string;
+  hostName: string;
+  hostEmail: string;
+  /** IANA 타임존 */
+  timezone: string;
+  /** 이벤트를 생성할 캘린더 ID */
+  calendarId: string;
+  slotMinutes: number;
+  slotIntervalMinutes: number;
+  minNoticeHours: number;
+  bookingWindowDays: number;
+  /** 요일별 근무 시간 (0=일요일 ~ 6=토요일). 빈 배열이면 그날은 예약 불가 */
+  workingHours: Record<number, WorkingWindow[]>;
+}
+
 /** GET /api/availability 응답 */
 export interface AvailabilityResponse {
   /** 호스트 타임존 (IANA, 예: "Asia/Seoul") */

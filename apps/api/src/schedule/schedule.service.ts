@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { DaySchedule, ScheduleResponse, TimeSlot } from '@slot/shared';
 import { CALENDAR_PROVIDER, CalendarProvider } from '../calendar/calendar-provider.interface';
-import { getHost } from '../config/schedule.config';
+import { getHost } from '../config/host-registry';
 import { getZonedParts, parseHhMm, zonedWallTimeToUtc } from '../common/time.util';
 
 @Injectable()

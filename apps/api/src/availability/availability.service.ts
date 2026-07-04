@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { AvailabilityResponse, BusyInterval, TimeSlot } from '@slot/shared';
 import { CALENDAR_PROVIDER, CalendarProvider } from '../calendar/calendar-provider.interface';
-import { scheduleConfig } from '../config/schedule.config';
+import { getHost } from '../config/host-registry';
 import { getZonedParts, parseHhMm, zonedWallTimeToUtc } from '../common/time.util';
 
 @Injectable()
@@ -17,7 +17,7 @@ export class AvailabilityService {
     to: Date,
     durationMinutes?: number,
   ): Promise<AvailabilityResponse> {
-    const cfg = scheduleConfig;
+    const cfg = getHost();
     const slotMinutes = durationMinutes ?? cfg.slotMinutes;
     const now = new Date();
 
@@ -51,7 +51,7 @@ export class AvailabilityService {
     rangeEnd: Date,
     slotMinutes: number,
   ): TimeSlot[] {
-    const cfg = scheduleConfig;
+    const cfg = getHost();
     const step = slotMinutes + cfg.slotIntervalMinutes;
     const slots: TimeSlot[] = [];
 

@@ -1,5 +1,5 @@
 import type { Booking } from '@slot/shared';
-import { getHost } from '../config/schedule.config';
+import { getHost } from '../config/host-registry';
 
 export type NotifyKind = 'created' | 'rescheduled' | 'cancelled';
 
@@ -46,4 +46,25 @@ export const buildMessage = (kind: NotifyKind, booking: Booking): NotifyMessage 
   }
 
   return { to: booking.guestEmail, subject: heads[kind], text: lines.join('\n') };
+};
+
+/** 호스트(나)에게 보내는 알림 본문 — 누가/언제 예약했는지 (텔레그램 등) */
+export const buildHostMessage = (kind: NotifyKind, booking: Booking): string => {
+  const host = getHost(booking.hostSlug);
+  const when = formatRange(booking, host.timezone);
+
+  const heads: Record<NotifyKind, string> = {
+    created: '🆕 새 예약',
+    rescheduled: '🔄 예약 변경',
+    cancelled: '❌ 예약 취소',
+  };
+  const org = booking.organization ? ` (${booking.organization})` : '';
+
+  return [
+    `${heads[kind]} — ${host.hostName}`,
+    `• 방문자: ${booking.guestName}${org}`,
+    `• 일시: ${when}`,
+    `• 연락처: ${booking.guestPhone}`,
+    `• 이메일: ${booking.guestEmail}`,
+  ].join('\n');
 };

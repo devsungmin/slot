@@ -6,7 +6,7 @@ import {
   NOTIFICATION_PROVIDER,
   NotificationProvider,
 } from '../notification/notification-provider.interface';
-import { getHost } from '../config/schedule.config';
+import { getHost } from '../config/host-registry';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { BookingRepository } from './booking.repository';
 
