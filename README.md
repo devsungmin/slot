@@ -145,8 +145,9 @@ slot/
 - [x] 예약 취소 / 변경 (관리 링크 `?manage=<token>`)
 - [x] 방문자 타임존 선택 UI
 - [x] 멀티 호스트 (`?host=<slug>` 호스트별 예약 페이지)
-- [x] 알림 (Mock 콘솔 ↔ Email/SMTP, 예약 생성/변경/취소 시 발송)
+- [x] 알림 — 방문자 이메일(Mock↔SMTP) · **호스트 텔레그램**(Mock↔Bot API, 누가/언제 예약했는지) · 방문자 SMS(Mock↔Twilio)
 - [x] Docker 배포 (compose)
+- [x] 호스트 관리 UI (`?admin` + `ADMIN_TOKEN`) — 호스트 추가/수정/삭제, 근무시간 편집
 
 ## 🤝 기여
 

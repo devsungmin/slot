@@ -753,6 +753,140 @@ body {
   margin: 4px 0 0;
 }
 
+/* Admin (host management) */
+.admin-login {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 360px;
+  margin: 0 auto;
+}
+
+.admin-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.admin-head .section-title {
+  margin: 0;
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.admin-table th {
+  text-align: left;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+.admin-table td {
+  padding: 10px;
+  border-bottom: 1px solid var(--grid-line);
+  vertical-align: middle;
+}
+
+.admin-table a {
+  color: var(--brand-ink);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.admin-table a:hover {
+  text-decoration: underline;
+}
+
+.admin-table__cal {
+  color: var(--muted);
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-table__actions {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.admin-table__actions .btn-ghost {
+  padding: 6px 12px;
+  font-size: 13px;
+  margin-left: 6px;
+}
+
+.admin-badge {
+  margin-left: 6px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--brand-soft);
+  color: var(--brand-ink);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.admin-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 480px;
+}
+
+.admin-hours {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.admin-hours legend {
+  font-size: 12px;
+  color: var(--muted);
+  padding: 0 4px;
+}
+
+.admin-hours__row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.admin-hours__row span {
+  flex: 0 0 20px;
+  text-align: center;
+}
+
+.admin-hours__row input {
+  flex: 1;
+  font: inherit;
+  font-weight: 400;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.admin-hours__row input:focus {
+  outline: none;
+  border-color: var(--brand);
+}
+
+.admin .form-actions {
+  margin-top: 16px;
+  max-width: 480px;
+}
+
 /* Footer */
 .foot {
   text-align: center;

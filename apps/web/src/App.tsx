@@ -14,6 +14,7 @@ import { BookingForm, type BookingFormValues } from './components/BookingForm';
 import { Confirmation } from './components/Confirmation';
 import { ManageBooking } from './components/ManageBooking';
 import { TimezoneSelect } from './components/TimezoneSelect';
+import { AdminPage } from './components/AdminPage';
 import {
   addDaysToKey,
   dateKey,
@@ -65,12 +66,15 @@ export const App = () => {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [booking, setBooking] = useState<Booking | null>(null);
 
-  // URL 파라미터: ?host=<slug> (호스트별 예약 페이지), ?manage=<token> (예약 관리)
+  // URL 파라미터: ?host=<slug> (호스트별 예약 페이지), ?manage=<token> (예약 관리), ?admin (호스트 관리)
   const [pageHost] = useState<string | null>(() =>
     new URLSearchParams(window.location.search).get('host'),
   );
   const [manageToken] = useState<string | null>(() =>
     new URLSearchParams(window.location.search).get('manage'),
+  );
+  const [adminMode] = useState<boolean>(() =>
+    new URLSearchParams(window.location.search).has('admin'),
   );
   const [userTz, setUserTz] = useState<string | null>(null);
   const [managed, setManaged] = useState<Booking | null>(null);
@@ -94,6 +98,7 @@ export const App = () => {
   };
 
   useEffect(() => {
+    if (adminMode) return; // 관리 페이지는 일정 로딩이 필요 없다
     if (manageToken) {
       // 예약 관리: 해당 예약의 호스트 일정을 불러온다.
       fetchBooking(manageToken)
@@ -343,6 +348,22 @@ export const App = () => {
       </>
     );
   };
+
+  // 호스트 관리 페이지 (?admin)
+  if (adminMode) {
+    return (
+      <div className="page page--wide">
+        <header className="brand">
+          <div className="brand__logo">Slot</div>
+          <p className="brand__tagline">호스트 관리</p>
+        </header>
+        <main className="card">
+          <AdminPage />
+        </main>
+        <footer className="foot">Powered by Slot</footer>
+      </div>
+    );
+  }
 
   return (
     <div className="page page--wide">

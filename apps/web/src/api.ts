@@ -2,6 +2,7 @@ import type {
   AvailabilityResponse,
   Booking,
   CreateBookingRequest,
+  HostSettings,
   ScheduleResponse,
 } from '@slot/shared';
 
@@ -87,4 +88,34 @@ export const rescheduleBooking = (token: string, start: string, end: string): Pr
 export const cancelBooking = (token: string): Promise<Booking> =>
   request<Booking>(`/bookings/${encodeURIComponent(token)}`, {
     method: 'DELETE',
+  });
+
+// ── 호스트 관리 API (x-admin-token 필요) ──
+
+const adminHeaders = (token: string) => ({
+  'Content-Type': 'application/json',
+  'x-admin-token': token,
+});
+
+export const adminListHosts = (token: string): Promise<HostSettings[]> =>
+  request<HostSettings[]>('/admin/hosts', { headers: adminHeaders(token) });
+
+export const adminCreateHost = (token: string, host: HostSettings): Promise<HostSettings> =>
+  request<HostSettings>('/admin/hosts', {
+    method: 'POST',
+    headers: adminHeaders(token),
+    body: JSON.stringify(host),
+  });
+
+export const adminUpdateHost = (token: string, host: HostSettings): Promise<HostSettings> =>
+  request<HostSettings>(`/admin/hosts/${encodeURIComponent(host.slug)}`, {
+    method: 'PUT',
+    headers: adminHeaders(token),
+    body: JSON.stringify(host),
+  });
+
+export const adminDeleteHost = (token: string, slug: string): Promise<{ ok: boolean }> =>
+  request<{ ok: boolean }>(`/admin/hosts/${encodeURIComponent(slug)}`, {
+    method: 'DELETE',
+    headers: adminHeaders(token),
   });

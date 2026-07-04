@@ -102,18 +102,32 @@ npm run format       # Prettier 포맷 적용
 | DELETE | `/api/bookings/:token`                  | 예약 취소 → 이벤트 삭제                        |
 | GET    | `/api/auth/google`                      | Google 동의 시작 (refresh token 발급용)        |
 | GET    | `/api/auth/google/callback`             | 동의 콜백 → refresh token 표시                 |
+| GET    | `/api/admin/hosts`                      | (관리) 호스트 목록 — `x-admin-token` 필요      |
+| POST   | `/api/admin/hosts`                      | (관리) 호스트 추가                             |
+| PUT    | `/api/admin/hosts/:slug`                | (관리) 호스트 수정 (slug 변경 불가)            |
+| DELETE | `/api/admin/hosts/:slug`                | (관리) 호스트 삭제 (기본 호스트 불가)          |
 
 예약 요청 필드: `start`, `end`, `guestName`, `guestEmail`, `guestPhone`(필수), `organization`(선택), `hostSlug`(선택).
 
-## 멀티 호스트
+## 멀티 호스트 / 호스트 관리
 
-- 호스트 레지스트리는 `apps/api/src/config/schedule.config.ts` 의 `hosts` 배열. 기본 호스트는 환경변수(`HOST_*`)에서, 추가 호스트는 코드에 등록.
-- 방문자는 `?host=<slug>` 로 호스트별 예약 페이지를 연다. 미지정/미존재 slug 는 기본 호스트로 폴백.
+- 호스트는 `config/host-registry.ts` 로 조회한다: `data/hosts.json` 이 있으면 그 내용, 없으면 `schedule.config.ts` 의 `defaultHosts`(기본 호스트는 `HOST_*` 환경변수).
+- **호스트 관리 UI**: 웹에서 `?admin` 접속 → `ADMIN_TOKEN` 입력 → 호스트 추가/수정/삭제 (근무시간 포함). 변경은 `data/hosts.json` 에 영속화.
+- 관리 API/UI 는 `ADMIN_TOKEN` 환경변수를 설정해야 활성화되며, 요청은 `x-admin-token` 헤더로 인증한다.
+- 방문자는 `?host=<slug>` 로 호스트별 예약 페이지를 연다. 미지정/미존재 slug 는 기본 호스트(첫 번째)로 폴백.
 - 호스트마다 `timezone` / `workingHours` / `calendarId` 를 가지며, 캘린더 작업(`getBusyIntervals`/`createEvent`/`updateEvent`/`deleteEvent`)은 해당 `calendarId` 로 수행된다.
+
+## 알림
+
+- `NotificationProvider` 추상화 + Composite 로 채널별 발송. 채널마다 env 로 Mock↔실연동 전환:
+  - **방문자 이메일**: `NOTIFY_PROVIDER` = `mock`(기본, 콘솔) | `email`(SMTP) | `off`
+  - **호스트 텔레그램**: `NOTIFY_TELEGRAM_PROVIDER` = `mock`(기본) | `telegram` | `off` — 예약 생성/변경/취소 시 호스트에게 "누가/언제" 알림 (`TELEGRAM_BOT_TOKEN`/`TELEGRAM_CHAT_ID`)
+  - **방문자 SMS**: `NOTIFY_SMS_PROVIDER` = `off`(기본) | `mock` | `twilio`
+- 알림 실패는 예약 흐름을 막지 않는다 (비차단).
 
 ## 영속화 / 환경변수
 
-- 예약은 무거운 DB 없이 **JSON 파일**(`apps/api/data/bookings.json`, gitignore)에 저장한다. Google 캘린더가 일정의 source of truth 이므로, 여기서는 "토큰 → 이벤트 매핑 + 방문자 정보"만 보관한다.
+- 예약은 무거운 DB 없이 **JSON 파일**(`apps/api/data/bookings.json`, gitignore)에 저장한다. Google 캘린더가 일정의 source of truth 이므로, 여기서는 "토큰 → 이벤트 매핑 + 방문자 정보"만 보관한다. 호스트 변경분도 같은 방식(`data/hosts.json`).
 - 방문자는 예약 시 받은 `?manage=<token>` 링크로 취소/변경할 수 있다.
 - 호스트 개인정보는 환경변수로 관리: `HOST_NAME`, `HOST_EMAIL`, `HOST_TIMEZONE` (소스에 하드코딩 금지).
 
@@ -128,5 +142,6 @@ npm run format       # Prettier 포맷 적용
 - [x] 방문자 타임존 선택 UI (그리드/라벨을 선택 타임존으로 렌더, 자정 넘김 처리)
 - [x] 멀티 호스트 (`?host=<slug>` 호스트별 예약 페이지, 호스트별 캘린더/근무시간)
 - [x] 배포: Docker (api 멀티스테이지 + web nginx 프록시) + docker-compose (데이터 볼륨)
-- [x] 알림: NotificationProvider 추상화 (Mock 콘솔 ↔ Email/SMTP), 생성/변경/취소 시 발송
-- [ ] (이후) 호스트 관리 UI, SMS 알림
+- [x] 알림: NotificationProvider 추상화 — 방문자 이메일(Mock↔SMTP) + 호스트 텔레그램(Mock↔Bot API) + 방문자 SMS(Mock↔Twilio, 기본 off)
+- [x] 호스트 관리: `?admin` UI + `/api/admin/hosts` CRUD (`ADMIN_TOKEN` 인증, hosts.json 영속화)
+- [ ] (이후) 필요 시: 예약 목록 관리 화면, 다국어(i18n), 테스트 코드
